@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 
-import static ru.blodge.tzfgame.constants.Direction.directions;
-
 public class WorldMapDefaultGenerator implements MapGenerator {
 
     Random random = new Random();
@@ -38,13 +36,14 @@ public class WorldMapDefaultGenerator implements MapGenerator {
             Room currentRoom = roomsQueue.remove();
 
             boolean isDeadEnd = true;
-            for (Direction direction : directions) {
+            for (Direction direction : Direction.values()) {
                 Room nextRoom = nextRoom(
                         intMap,
                         currentRoom,
                         direction);
                 if (nextRoom != null) {
                     intMap[nextRoom.getX()][nextRoom.getY()] = 1;
+                    linkRooms(currentRoom, nextRoom, direction);
                     rooms.add(nextRoom);
                     if (rooms.size() == roomsCount) {
                         isEnough = true;
@@ -65,6 +64,27 @@ public class WorldMapDefaultGenerator implements MapGenerator {
         }
 
         return normalizeToMap(rooms);
+    }
+
+    private void linkRooms(Room currentRoom, Room newRoom, Direction direction) {
+        switch (direction) {
+            case NORTH -> {
+                currentRoom.setNorth(newRoom);
+                newRoom.setSouth(currentRoom);
+            }
+            case EAST -> {
+                currentRoom.setEast(newRoom);
+                currentRoom.setWest(currentRoom);
+            }
+            case SOUTH -> {
+                currentRoom.setSouth(newRoom);
+                newRoom.setNorth(currentRoom);
+            }
+            case WEST -> {
+                currentRoom.setWest(newRoom);
+                newRoom.setEast(currentRoom);
+            }
+        }
     }
 
     private WorldMap normalizeToMap(List<Room> rooms) {
@@ -123,7 +143,7 @@ public class WorldMapDefaultGenerator implements MapGenerator {
             int roomX,
             int roomY) {
         int count = 0;
-        for (Direction direction : directions) {
+        for (Direction direction : Direction.values()) {
             int x = roomX + direction.xShift();
             int y = roomY + direction.yShift();
 

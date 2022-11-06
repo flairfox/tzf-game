@@ -1,22 +1,27 @@
 package ru.blodge.tzfgame.constants;
 
-import java.util.Set;
+public enum Direction {
 
-public class Direction {
-
-    public final static Set<Direction> directions = Set.of(
-            new Direction(0, -1),
-            new Direction(1, 0),
-            new Direction(0, 1),
-            new Direction(-1, 0)
-    );
+    NORTH(0, -1),
+    EAST(1, 0),
+    SOUTH(0, 1),
+    WEST(-1, 0);
 
     private final int xShift;
     private final int yShift;
 
-    private Direction(int xShift, int yShift) {
+    Direction(int xShift, int yShift) {
         this.xShift = xShift;
         this.yShift = yShift;
+    }
+
+    public Direction opposite() {
+        return switch (this) {
+            case NORTH -> SOUTH;
+            case SOUTH -> NORTH;
+            case EAST -> WEST;
+            case WEST -> EAST;
+        };
     }
 
     public int xShift() {
