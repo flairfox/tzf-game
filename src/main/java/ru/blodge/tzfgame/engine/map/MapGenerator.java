@@ -4,6 +4,6 @@ import ru.blodge.tzfgame.engine.model.WorldMap;
 
 public interface MapGenerator {
 
-    WorldMap generate(int width, int height, int roomsCount);
+    WorldMap generate(int roomsCount);
 
 }

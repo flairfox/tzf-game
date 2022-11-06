@@ -32,17 +32,12 @@ public class TzfBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         LOGGER.info("Received new update {}", update);
 
-        String[] mapParams = update
+        int roomsCount = Integer.parseInt(update
                 .getMessage()
                 .getText()
-                .trim()
-                .split(" ");
+                .trim());
 
-        int width = Integer.parseInt(mapParams[0]);
-        int height = Integer.parseInt(mapParams[1]);
-        int roomsCount = Integer.parseInt(mapParams[2]);
-
-        WorldMap worldMap = mapGenerator.generate(width, height, roomsCount);
+        WorldMap worldMap = mapGenerator.generate(roomsCount);
 
         SendMessage renderedMap = new SendMessage();
         renderedMap.setChatId(update.getMessage().getChatId());

@@ -1,76 +1,136 @@
 package ru.blodge.tzfgame.engine.map.impl;
 
+import ru.blodge.tzfgame.constants.Direction;
 import ru.blodge.tzfgame.engine.map.MapGenerator;
 import ru.blodge.tzfgame.engine.model.Room;
 import ru.blodge.tzfgame.engine.model.WorldMap;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Random;
+
+import static ru.blodge.tzfgame.constants.Direction.directions;
 
 public class WorldMapDefaultGenerator implements MapGenerator {
 
     Random random = new Random();
 
     @Override
-    public WorldMap generate(int width, int height, int roomsCount) {
+    public WorldMap generate(int roomsCount) {
+        int width = roomsCount * 2 + 1;
+        int height = roomsCount * 2 + 1;
+
         int[][] intMap = initIntMap(width, height);
 
         Room firstRoom = new Room(width / 2, height / 2);
-        List<Room> roomsQueue = new ArrayList<>();
+        List<Room> rooms = new LinkedList<>();
+        rooms.add(firstRoom);
+
+        Queue<Room> roomsQueue = new LinkedList<>();
+        Queue<Room> deadEnds = new LinkedList<>();
         roomsQueue.add(firstRoom);
 
-        int idx = 0;
-        while (roomsQueue.size() <= roomsCount) {
-            Room currentRoom = roomsQueue.get(idx);
+        boolean isEnough = false;
+        while (!isEnough) {
+            Room currentRoom = roomsQueue.remove();
 
-            int southX = currentRoom.getX();
-            int southY = currentRoom.getY() + 1;
-            if (intMap[southX][southY] == 0) {
-                if (random.nextBoolean()) {
-                    Room southRoom = new Room(southX, southY);
-                    intMap[southX][southY] = 1;
-                    roomsQueue.add(southRoom);
+            boolean isDeadEnd = true;
+            for (Direction direction : directions) {
+                Room nextRoom = nextRoom(
+                        intMap,
+                        currentRoom,
+                        direction);
+                if (nextRoom != null) {
+                    intMap[nextRoom.getX()][nextRoom.getY()] = 1;
+                    rooms.add(nextRoom);
+                    if (rooms.size() == roomsCount) {
+                        isEnough = true;
+                        break;
+                    }
+
+                    roomsQueue.add(nextRoom);
+                    isDeadEnd = false;
                 }
             }
 
-            int northX = currentRoom.getX();
-            int northY = currentRoom.getY() - 1;
-            if (intMap[northX][northY] == 0) {
-                if (random.nextBoolean()) {
-                    Room northRoom = new Room(northX, northY);
-                    intMap[northX][northY] = 1;
-                    roomsQueue.add(northRoom);
-                }
-            }
+            if (isDeadEnd)
+                deadEnds.add(currentRoom);
 
-            int westX = currentRoom.getX() - 1;
-            int westY = currentRoom.getY();
-            if (intMap[westX][westY] == 0) {
-                if (random.nextBoolean()) {
-                    Room westRoom = new Room(westX, westY);
-                    intMap[westX][westY] = 1;
-                    roomsQueue.add(westRoom);
-                }
+            if (roomsQueue.isEmpty() && rooms.size() < roomsCount) {
+                roomsQueue.add(deadEnds.remove());
             }
-
-            int eastX = currentRoom.getX() + 1;
-            int eastY = currentRoom.getY();
-            if (intMap[eastX][eastY] == 0) {
-                if (random.nextBoolean()) {
-                    Room eastRoom = new Room(eastX, eastY);
-                    intMap[eastX][eastY] = 1;
-                    roomsQueue.add(eastRoom);
-                }
-            }
-
-            idx++;
         }
 
-        WorldMap newMap = new WorldMap(width, height);
-        roomsQueue.forEach(newMap::addRoom);
+        return normalizeToMap(rooms);
+    }
 
-        return newMap;
+    private WorldMap normalizeToMap(List<Room> rooms) {
+        int minX = Integer.MAX_VALUE;
+        int maxX = 0;
+
+        int minY = Integer.MAX_VALUE;
+        int maxY = 0;
+
+        for (Room room : rooms) {
+            if (room.getX() < minX)
+                minX = room.getX();
+
+            if (room.getX() > maxX)
+                maxX = room.getX();
+
+            if (room.getY() < minY)
+                minY = room.getY();
+
+            if (room.getY() > maxY)
+                maxY = room.getY();
+        }
+
+        int width = maxX - minX + 3;
+        int height = maxY - minY + 3;
+
+        for (Room room : rooms) {
+            room.setX(room.getX() - minX + 1);
+            room.setY(room.getY() - minY + 1);
+        }
+
+        WorldMap normalizedMap = new WorldMap(width, height);
+        rooms.forEach(normalizedMap::addRoom);
+
+        return normalizedMap;
+    }
+
+    private Room nextRoom(
+            int[][] map,
+            Room currentRoom,
+            Direction direction) {
+
+        int newX = currentRoom.getX() + direction.xShift();
+        int newY = currentRoom.getY() + direction.yShift();
+
+        if (map[newX][newY] == 0) {
+            if (countNeighbors(map, newX, newY) < 2)
+                if (random.nextBoolean())
+                    return new Room(newX, newY);
+        }
+
+        return null;
+    }
+
+    private int countNeighbors(
+            int[][] map,
+            int roomX,
+            int roomY) {
+        int count = 0;
+        for (Direction direction : directions) {
+            int x = roomX + direction.xShift();
+            int y = roomY + direction.yShift();
+
+            if (map[x][y] == 1)
+                count++;
+        }
+
+        return count;
     }
 
     private int[][] initIntMap(int width, int height) {
