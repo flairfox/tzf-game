@@ -24,6 +24,8 @@ public class WorldMapDefaultGenerator implements MapGenerator {
         int[][] intMap = initIntMap(width, height);
 
         Room firstRoom = new Room(width / 2, height / 2);
+        intMap[firstRoom.getX()][firstRoom.getY()] = 1;
+
         List<Room> rooms = new LinkedList<>();
         rooms.add(firstRoom);
 
@@ -108,11 +110,10 @@ public class WorldMapDefaultGenerator implements MapGenerator {
         int newX = currentRoom.getX() + direction.xShift();
         int newY = currentRoom.getY() + direction.yShift();
 
-        if (map[newX][newY] == 0) {
+        if (map[newX][newY] == 0)
             if (countNeighbors(map, newX, newY) < 2)
                 if (random.nextBoolean())
                     return new Room(newX, newY);
-        }
 
         return null;
     }
